@@ -1,6 +1,6 @@
 # WhatsApp Store Bot
 
-A simple WhatsApp bot that allows users to view products from a Wix store.
+A WhatsApp bot that allows users to browse and purchase products from a Wix store.
 
 ## Prerequisites
 
