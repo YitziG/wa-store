@@ -1,0 +1,41 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install ssh-keyscan
+      run: sudo apt-get update && sudo apt-get install -y openssh-client
+
+    - name: Create SSH directory
+      run: mkdir -p ~/.ssh
+
+    - name: Deploy to EC2
+      env:
+        PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        HOST: ${{ secrets.EC2_HOST }}
+        USER: ${{ secrets.EC2_USER }}
+      run: |
+        ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+        echo "$PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+        rsync -avz --exclude-from=.deployignore -e "ssh -i private_key.pem" ./ $USER@$HOST:/home/***/wa-store
+        ssh -i private_key.pem $USER@$HOST "cd /home/***/wa-store && npm ci && pm2 startOrRestart ecosystem.config.cjs"
+        rm -f private_key.pem
