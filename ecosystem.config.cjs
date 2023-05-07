@@ -2,7 +2,7 @@ module.exports = {
     apps: [
         {
             name: 'wa-store',
-            script: 'index.mjs',
+            script: './index.mjs',
             instances: 1,
             autorestart: true,
             watch: false,
