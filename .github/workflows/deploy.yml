@@ -37,6 +37,7 @@ jobs:
         run: |
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
           echo "$PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
           echo "$ENV_FILE" > .env
           ssh -i private_key.pem $USER@$HOST "mkdir -p ~/wa-store"
           rsync -avz --exclude-from=.deployignore -e "ssh -i private_key.pem" ./ $USER@$HOST:~/wa-store
