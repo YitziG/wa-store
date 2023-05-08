@@ -1,7 +1,4 @@
-import {getAvailableProducts} from "../wix/cart/products/products_api.mjs";
-
-async function buildMessage(contactName) {
-    const productList = await getAvailableProducts();
+async function buildMessage(contactName, productList) {
     const formattedProductsList = productList.map((product, index) => {
         const price = `${product.price.formatted.price}`;
         const productPageUrl = `${product.productPageUrl.base}${product.productPageUrl.path}`
