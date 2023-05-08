@@ -37,6 +37,7 @@ jobs:
         ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
         echo "$PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
+        ssh -i private_key.pem $USER@$HOST "mkdir -p /home/***/wa-store"
         rsync -avz --exclude-from=.deployignore -e "ssh -i private_key.pem" ./ $USER@$HOST:/home/***/wa-store
         ssh -i private_key.pem $USER@$HOST "cd /home/***/wa-store && npm ci && pm2 startOrRestart ecosystem.config.cjs"
         rm -f private_key.pem
