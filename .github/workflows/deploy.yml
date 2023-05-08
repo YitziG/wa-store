@@ -39,6 +39,6 @@ jobs:
         chmod 600 private_key.pem
         ssh -i private_key.pem $USER@$HOST "mkdir -p ~/wa-store"
         rsync -avz --exclude-from=.deployignore -e "ssh -i private_key.pem" ./ $USER@$HOST:~/wa-store
-        ssh -i private_key.pem $USER@$HOST "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash && . ~/.nvm/nvm.sh && nvm install --lts && nvm use --lts"
+        ssh -i private_key.pem $USER@$HOST "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash && . ~/.nvm/nvm.sh && nvm install --lts && nvm use --lts && npm install -g pm2"
         ssh -i private_key.pem $USER@$HOST "cd ~/wa-store && npm ci && pm2 startOrRestart ecosystem.config.cjs"
         rm -f private_key.pem
