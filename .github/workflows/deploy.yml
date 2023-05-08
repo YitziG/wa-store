@@ -28,27 +28,16 @@ jobs:
       - name: Create SSH directory
         run: mkdir -p ~/.ssh
 
-      - name: Create .env file
-        run: |
-          echo "$PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          echo "${{ secrets.ENV_FILE }}" > .env
-          scp -i private_key.pem .env $USER@$HOST:~/wa-store
-          rm -f private_key.pem .env
-        env:
-          PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          HOST: ${{ secrets.EC2_HOST }}
-          USER: ${{ secrets.EC2_USER }}
-
       - name: Deploy to EC2
         env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
           USER: ${{ secrets.EC2_USER }}
         run: |
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
           echo "$PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
+          echo "$ENV_FILE" > .env
           ssh -i private_key.pem $USER@$HOST "mkdir -p ~/wa-store"
           rsync -avz --exclude-from=.deployignore -e "ssh -i private_key.pem" ./ $USER@$HOST:~/wa-store
           
@@ -59,3 +48,4 @@ jobs:
           ssh -i private_key.pem $USER@$HOST "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash && . ~/.nvm/nvm.sh && nvm install --lts && nvm use --lts && npm install -g pm2"
           ssh -i private_key.pem $USER@$HOST "cd ~/wa-store && npm ci && pm2 startOrRestart ecosystem.config.cjs"
           rm -f private_key.pem
+          rm -f .env
