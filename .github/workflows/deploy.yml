@@ -28,11 +28,6 @@ jobs:
       - name: Create SSH directory
         run: mkdir -p ~/.ssh
 
-      - name: Install Google Chrome
-        run: |
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
-          sudo yum localinstall google-chrome-stable_current_x86_64.rpm
-
       - name: Deploy to EC2
         env:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
