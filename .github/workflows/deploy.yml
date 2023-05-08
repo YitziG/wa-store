@@ -28,11 +28,6 @@ jobs:
       - name: Create SSH directory
         run: mkdir -p ~/.ssh
 
-      - name: Remove existing SSH host keys
-        run: ssh-keygen -R $HOST
-        env:
-          HOST: ${{ secrets.EC2_HOST }}
-
       - name: Create .env file
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
