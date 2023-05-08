@@ -28,6 +28,9 @@ jobs:
       - name: Create SSH directory
         run: mkdir -p ~/.ssh
 
+      - name: Create empty known_hosts file
+        run: touch ~/.ssh/known_hosts
+
       - name: Remove existing SSH host keys
         run: ssh-keygen -R $HOST
         env:
