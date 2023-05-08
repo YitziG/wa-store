@@ -6,7 +6,7 @@ dotenv.config();
 
 export const wixClient = createClient({
     auth: OAuthStrategy({
-        clientId: process.env.CLIENT_ID
+        clientId: process.env.WIX_CLIENT_ID
     }),
     modules: {
         products
