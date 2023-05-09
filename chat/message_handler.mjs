@@ -5,6 +5,7 @@ import { getAvailableProducts } from "../wix/cart/products/products_api.mjs";
 import axios from "axios";
 import pkg from 'whatsapp-web.js';
 import { wixClient } from "../wix/wix_client.mjs";
+import {botReadyTimestamp} from "../whatsapp/event_listeners.mjs";
 
 const { MessageMedia } = pkg;
 
@@ -119,6 +120,13 @@ async function handleCheckout(chat, userPhone) {
 
 
 async function handleMessage(msg) {
+    if (msg.timestamp != null) {
+        const messageTimestamp = new Date(msg.timestamp * 1000);
+        if (messageTimestamp < botReadyTimestamp) {
+            console.log('Ignoring message sent before bot was ready');
+            return;
+        }
+    }
     const chat = await msg.getChat();
     await sendSeenAndTyping(chat);
 

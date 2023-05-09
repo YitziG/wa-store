@@ -1,5 +1,6 @@
 import qrcode from "qrcode-terminal";
 import {handleMessage} from "../chat/message_handler.mjs";
+export let botReadyTimestamp = null;
 
 function initializeWAListeners(waClient) {
     waClient.on('qr', (qr) => {
@@ -8,6 +9,7 @@ function initializeWAListeners(waClient) {
     });
 
     waClient.on('ready', () => {
+        botReadyTimestamp = new Date();
         console.log('Client is ready!');
     });
 
