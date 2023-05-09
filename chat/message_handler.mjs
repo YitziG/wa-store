@@ -40,7 +40,7 @@ async function handleProductSelection(chat, userPhone, currentState, selectedPro
         await sendProductMessage(chat, selectedProduct);
         setUserState(userPhone, { ...currentState, stage: 'productActions' });
     } else {
-        await chat.reply('Invalid product number. Please select a number from the product list.');
+        await chat.sendMessage('Invalid product number. Please select a number from the product list.');
     }
 }
 
