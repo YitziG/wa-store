@@ -1,18 +1,19 @@
-import { setTokensForUser } from "../wix/token_management.mjs";
-import { getUserState, setUserState, removeUserState } from "../whatsapp/state_manager.mjs";
-import { buildMessage } from "./message_builder.mjs";
-import { getAvailableProducts } from "../wix/cart/products/products_api.mjs";
+import {setTokensForUser} from "../wix/token_management.mjs";
+import {getUserState, removeUserState, setUserState} from "../whatsapp/state_manager.mjs";
+import {buildMessage} from "./message_builder.mjs";
+import {getAvailableProducts} from "../wix/cart/products/products_api.mjs";
 import axios from "axios";
 import pkg from 'whatsapp-web.js';
-import { wixClient } from "../wix/wix_client.mjs";
-import { cart, currentCart } from "@wix/ecom";
+import {wixClient} from "../wix/wix_client.mjs";
 
-const { MessageMedia } = pkg;
+const {MessageMedia} = pkg;
 
 async function handleMessage(msg) {
     const chat = await msg.getChat();
-    chat.sendSeen();
-    chat.sendStateTyping();
+    chat.sendSeen().then(() => {
+        chat.sendStateTyping();
+    });
+
     const userPhone = msg.from;
     await setTokensForUser(userPhone);
     const currentState = getUserState(userPhone);
@@ -40,21 +41,20 @@ async function handleMessage(msg) {
                 const imageUrl = selectedProduct.media.mainMedia?.image?.url;
                 if (imageUrl) {
                     try {
-                        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+                        const response = await axios.get(imageUrl, {responseType: 'arraybuffer'});
                         const base64EncodedImage = Buffer.from(response.data, 'binary').toString('base64');
                         const media = new MessageMedia('image/jpeg', base64EncodedImage, `${selectedProduct.name}.jpg`);
                         await chat.sendMessage(media, {
                             caption: `You've selected ${selectedProduct.name}`
                         });
-                    } catch
-                    (error) {
+                    } catch (error) {
                         console.error('Error fetching the image:', error.message);
                     }
                 } else {
                     await chat.sendMessage(`You've selected ${selectedProduct.name}`);
                 }
-                await chat.sendMessage("What would you like to do next?\n\n1. Add to cart\n2. Purchase\n3. Go back to product list");
-                setUserState(userPhone, { ...currentState, stage: 'productActions' });
+                await chat.sendMessage("What would you like to do next?\n\n1. Add to cart\n2. Go back to product list");
+                setUserState(userPhone, {...currentState, stage: 'productActions'});
             } else {
                 await msg.reply('Invalid product number. Please select a number from the product list.');
             }
@@ -63,32 +63,33 @@ async function handleMessage(msg) {
             if (msg.body.trim() === '1') {
                 // try {
                 wixClient.currentCart.addToCurrentCart({
-                    lineItems: [
-                        {
-                            quantity: 1,
-                            catalogReference: {
-                                catalogItemId: currentState.selectedProduct._id,
-                                appId: "1380b703-ce81-ff05-f115-39571d94dfcd"
-                            }
-                        }]
+                    lineItems: [{
+                        quantity: 1, catalogReference: {
+                            catalogItemId: currentState.selectedProduct._id,
+                            appId: "1380b703-ce81-ff05-f115-39571d94dfcd"
+                        }
+                    }]
                 }).then((res) => {
 
                     console.log(res.cart);
                     chat.sendMessage(`${currentState.selectedProduct.name} has been added to your cart.`);
                     chat.sendMessage(`Your cart items:\n\n${res.cart.lineItems.map((item, index) => `${index + 1}. ${item.productName.translated} (Quantity: ${item.quantity})`).join("\n")}`);
-                    setUserState(userPhone, { ...currentState, stage: 'forkInTheRoad' });
-                    chat.sendMessage(
-                        "What would you like to do next?\n\n1. Checkout\n2. Go back to product list"
-                    );
+                    setUserState(userPhone, {...currentState, stage: 'forkInTheRoad'});
+                    chat.sendMessage("What would you like to do next?\n\n1. Checkout\n2. Go back to product list");
 
                 })
-
-                break;
             }
+            else if (msg.body.trim() === '2') {
+                setUserState(userPhone, {...currentState, stage: 'productSelection'});
+                chat.sendMessage(catalogMessage).then(r => {
+                    console.log(r)
+                });
+            }
+            break;
         case 'forkInTheRoad':
             if (msg.body.trim() === '1') {
                 wixClient.currentCart.createCheckoutFromCurrentCart({
-                    channelType: "OTHER_PLATFORM",
+                    channelType: "OTHER_PLATFORM"
                 }).then(async (res) => {
                     const checkoutId = res.checkoutId
                     wixClient.redirects.createRedirectSession({
@@ -96,15 +97,16 @@ async function handleMessage(msg) {
                             checkoutId
                         }
                     }).then((res) => {
+                        console.log(res.redirectSession.fullUrl);
                         chat.sendMessage(`Please proceed with the payment on our website ${res.redirectSession.fullUrl}`);
                         removeUserState(userPhone);
-
                     })
                 })
-            }
-            else if (msg.body.trim() === '2') {
-                setUserState(userPhone, { ...currentState, stage: 'catalogView' });
-                chat.sendMessage(catalogMessage);
+            } else if (msg.body.trim() === '2') {
+                setUserState(userPhone, {...currentState, stage: 'productSelection'});
+                chat.sendMessage(catalogMessage).then(r => {
+                    console.log(r)
+                });
             }
     }
 }
@@ -148,4 +150,4 @@ function isEmptyOrZeroWidth(value) {
     return !value || value.trim() === '' || /^[\u200B-\u200D\uFEFF]+$/.test(value);
 }
 
-export { handleMessage };
+export {handleMessage};

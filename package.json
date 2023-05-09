@@ -14,6 +14,7 @@
   "dependencies": {
     "@wix/api-client": "^1.1.58",
     "@wix/ecom": "^1.0.168",
+    "@wix/redirects": "^1.0.14",
     "@wix/stores": "^1.0.60",
     "axios": "^1.4.0",
     "dotenv": "^16.0.3",

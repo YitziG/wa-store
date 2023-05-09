@@ -4,7 +4,6 @@ import { products } from "@wix/stores";
 import { currentCart, checkout } from "@wix/ecom";
 import { redirects } from '@wix/redirects';
 
-
 dotenv.config();
 
 export const wixClient = createClient({
