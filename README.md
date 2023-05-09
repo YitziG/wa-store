@@ -38,13 +38,6 @@ To set up the WhatsApp Store Bot, follow these steps:
    ```
 5. Scan the QR code that appears in the terminal with your WhatsApp account.
 
-## Usage
-
-Once the bot is running, you can send it the following commands:
-
-
-* `products` - Displays a list of products from your Wix store.
-
 ### Coming soon
 
 * `help` - Displays a list of available commands.
