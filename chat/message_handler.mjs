@@ -1,17 +1,19 @@
-import { setTokensForUser } from "../wix/token_management.mjs";
-import { getUserState, removeUserState, setUserState } from "../whatsapp/state_manager.mjs";
-import { buildMessage } from "./message_builder.mjs";
-import { getAvailableProducts } from "../wix/cart/products/products_api.mjs";
+import {setTokensForUser} from "../wix/token_management.mjs";
+import {getUserState, removeUserState, setUserState} from "../whatsapp/state_manager.mjs";
+import {buildMessage} from "./message_builder.mjs";
+import {getAvailableProducts} from "../wix/cart/products/products_api.mjs";
 import axios from "axios";
 import pkg from 'whatsapp-web.js';
-import { wixClient } from "../wix/wix_client.mjs";
+import {wixClient} from "../wix/wix_client.mjs";
 import {botReadyTimestamp} from "../whatsapp/event_listeners.mjs";
+import {generateDocument} from "../util/link_handler.mjs";
 
-const { MessageMedia } = pkg;
+const {MessageMedia} = pkg;
 
 async function sendSeenAndTyping(chat) {
-    await chat.sendSeen();
-    chat.sendStateTyping();
+    chat.sendSeen().then(() => {
+        chat.sendStateTyping();
+    });
 }
 
 async function updateCurrentState(userPhone, currentState, contact) {
@@ -38,7 +40,7 @@ async function handleProductSelection(chat, userPhone, currentState, selectedPro
         currentState.selectedProduct = selectedProduct;
         setUserState(userPhone, currentState);
         await sendProductMessage(chat, selectedProduct);
-        setUserState(userPhone, { ...currentState, stage: 'productActions' });
+        setUserState(userPhone, {...currentState, stage: 'productActions'});
     } else {
         await chat.sendMessage('Invalid product number. Please select a number from the product list.');
     }
@@ -48,7 +50,7 @@ async function sendProductMessage(chat, selectedProduct) {
     const imageUrl = selectedProduct.media.mainMedia?.image?.url;
     if (imageUrl) {
         try {
-            const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            const response = await axios.get(imageUrl, {responseType: 'arraybuffer'});
             const base64EncodedImage = Buffer.from(response.data, 'binary').toString('base64');
             const media = new MessageMedia('image/jpeg', base64EncodedImage, `${selectedProduct.name}.jpg`);
             await chat.sendMessage(media, {
@@ -72,7 +74,7 @@ async function handleProductActions(chat, userPhone, currentState, msg) {
 
 async function handleForkInTheRoad(chat, userPhone, currentState, msg) {
     if (msg.body.trim() === '1') {
-        await handleCheckout(chat, userPhone);
+        await handleCheckout(chat, userPhone, currentState);
     } else if (msg.body.trim() === '2') {
         await handleGoBackToProductList(chat, userPhone, currentState);
     }
@@ -82,42 +84,53 @@ async function handleAddToCart(chat, userPhone, currentState) {
     wixClient.currentCart.addToCurrentCart({
         lineItems: [{
             quantity: 1, catalogReference: {
-                catalogItemId: currentState.selectedProduct._id,
-                appId: "1380b703-ce81-ff05-f115-39571d94dfcd"
+                catalogItemId: currentState.selectedProduct._id, appId: "1380b703-ce81-ff05-f115-39571d94dfcd"
             }
         }]
     }).then((res) => {
         console.log(res.cart);
         chat.sendMessage(`${currentState.selectedProduct.name} has been added to your cart.`);
         chat.sendMessage(`Your cart items:\n\n${res.cart.lineItems.map((item, index) => `${index + 1}. ${item.productName.translated} (Quantity: ${item.quantity})`).join("\n")}`);
-        setUserState(userPhone, { ...currentState, stage: 'forkInTheRoad' });
+        setUserState(userPhone, {...currentState, stage: 'forkInTheRoad'});
         chat.sendMessage("What would you like to do next?\n\n1. Checkout\n2. Go back to product list");
     });
 }
 
 async function handleGoBackToProductList(chat, userPhone, currentState) {
     const catalogMessage = await buildMessage(currentState.contactName, currentState.products);
-    setUserState(userPhone, { ...currentState, stage: 'productSelection' });
+    setUserState(userPhone, {...currentState, stage: 'productSelection'});
     await chat.sendMessage(catalogMessage);
 }
 
-async function handleCheckout(chat, userPhone) {
-    wixClient.currentCart.createCheckoutFromCurrentCart({
-        channelType: "OTHER_PLATFORM"
-    }).then(async (res) => {
-        const checkoutId = res.checkoutId;
-        wixClient.redirects.createRedirectSession({
-            ecomCheckout: {
-                checkoutId
-            }
-        }).then((res) => {
-            console.log(res.redirectSession.fullUrl);
-            chat.sendMessage(`Please proceed with the payment on our website ${res.redirectSession.fullUrl}`);
-            removeUserState(userPhone);
-        });
-    });
+async function handleCheckout(chat, userPhone, currentState) {
+    const checkoutId = await createCheckout();
+    const [url, checkout] = await Promise.all([
+        getUrl(checkoutId),
+        wixClient.checkout.getCheckout(checkoutId)
+    ]);
+    generateDocument(checkout, currentState.contactName, url).then((res) => {
+        console.log(res);
+        const messageMedia = MessageMedia.fromFilePath(res);
+        chat.sendMessage(messageMedia);
+    })
+    removeUserState(userPhone);
 }
 
+async function createCheckout() {
+    const res = await wixClient.currentCart.createCheckoutFromCurrentCart({
+        channelType: "OTHER_PLATFORM"
+    });
+    return res.checkoutId;
+}
+
+async function getUrl(checkoutId) {
+    const res = await wixClient.redirects.createRedirectSession({
+        ecomCheckout: {
+            checkoutId
+        }
+    });
+    return res.redirectSession.fullUrl;
+}
 
 async function handleMessage(msg) {
     if (msg.timestamp != null) {
@@ -159,4 +172,4 @@ function isEmptyOrZeroWidth(value) {
     return !value || value.trim() === '' || /^[\u200B-\u200D\uFEFF]+$/.test(value);
 }
 
-export { handleMessage };
+export {handleMessage};
