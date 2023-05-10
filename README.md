@@ -28,7 +28,7 @@ To set up the WhatsApp Store Bot, follow these steps:
 3. Create a `.env` file in the root directory with the following content:
 
    ```bash
-   CLIENT_ID=your_wix_client_id
+   WIX_CLIENT_ID=your_wix_client_id
    ```
    Replace `your_wix_client_id` with your actual Wix client ID.
 4. Run the bot:
