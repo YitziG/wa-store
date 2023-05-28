@@ -61,12 +61,6 @@ env:
   HOST: ${{ secrets.EC2_HOST }}
   USER: ${{ secrets.EC2_USER }}
 ```
+### Acknowledgments
 
-### Coming soon
-
-* `help` - Displays a list of available commands.
-* `product <product_id>` - Displays the details of a specific product.
-* `add <product_id>` - Adds a product to the cart.
-* `cart` - Displays the contents of the cart.
-* `checkout` - Checks out the cart.
-* `clear` - Clears the cart.
+Big thanks to Pedro López, whose [`whatsapp-web.js`](https://github.com/pedroslopez/whatsapp-web.js) was a lifesaver for this project. Pedro's work stands as a testament to the power of open source - it's been a great learning resource for me, and the backbone of my WhatsApp chatbot. Do check it out, it's worth it. Cheers, Pedro!
